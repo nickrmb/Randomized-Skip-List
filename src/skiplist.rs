@@ -12,7 +12,7 @@ pub struct SkipList<T: Ord> {
 }
 
 // internal representation of a node in SkipList
-struct Node<T: Ord> {
+pub struct Node<T: Ord> {
     val: Option<Rc<T>>,
     prev: RefCell<Vec<Rc<Node<T>>>>,
     next: RefCell<Vec<Rc<Node<T>>>>,
@@ -21,7 +21,6 @@ struct Node<T: Ord> {
 }
 
 impl<T: Ord> Node<T> {
-
     // create node with value
     fn new(x: T) -> Rc<Node<T>> {
         Rc::new(Node {
@@ -54,10 +53,45 @@ impl<T: Ord> Node<T> {
             is_tail: true,
         })
     }
+
+    // get direct predecessor
+    pub fn pre(&self) -> Option<Rc<Node<T>>> {
+        if self.is_head {
+            return None;
+        }
+
+        let r = Rc::clone(&self.prev.borrow()[0]);
+        if r.is_head {
+            return None;
+        }
+
+        Some(r)
+    }
+
+    // get direct successor
+    pub fn suc(&self) -> Option<Rc<Node<T>>> {
+        if self.is_tail {
+            return None;
+        }
+
+        let r = Rc::clone(&self.next.borrow()[0]);
+        if r.is_tail {
+            return None;
+        }
+
+        Some(r)
+    }
+
+    // get value of node
+    pub fn val(&self) -> Rc<T> {
+        if let Some(x) = &self.val {
+            return Rc::clone(x);
+        }
+        panic!("No value in Node!"); // should never happen has there is no pub access to head / tail
+    }
 }
 
 impl<T: Ord> SkipList<T> {
-
     // create new empty SkipList
     pub fn new() -> SkipList<T> {
         // new head / tail
@@ -116,14 +150,42 @@ impl<T: Ord> SkipList<T> {
             // go to next node
             cur = next;
         }
-        
+
         // reverse history to increase interpretability
         history.reverse();
         history
     }
 
+    // find value and return it if exists
+    pub fn find(&self, val: &T) -> Option<Rc<T>> {
+        // get history to largest element <= val
+        let history = self.search_history(val);
+
+        // get element on lowest level
+        let first = &history[0];
+
+        // check if it is head node
+        if first.is_head {
+            return None;
+        }
+
+        // check if value in node equals searched value
+        if let Some(x) = &first.val {
+            if **x == *val {
+                return Some(Rc::clone(x));
+            }
+        }
+
+        None
+    }
+
     // insert value into SkipList (even if it already exists)
     pub fn insert(&mut self, val: T) {
+        self.insert_ret_node(val);
+    }
+
+    // insert value into SkipList and return created node (internal method)
+    fn insert_ret_node(&mut self, val: T) -> Rc<Node<T>> {
         let history = self.search_history(&val);
 
         // geometric distributed random variable for height generation
@@ -165,36 +227,8 @@ impl<T: Ord> SkipList<T> {
                 self.height += 1;
             }
         }
-    }
 
-    // create an iterator to iterate through SkipList (lowest level)
-    pub fn iter(&self) -> NodeIterator<T> {
-        NodeIterator {
-            cur: Rc::clone(&self.head.next.borrow()[0]),
-        }
-    }
-
-    // find value and return it if exists
-    pub fn find(&self, val: &T) -> Option<Rc<T>> {
-        // get history to largest element <= val
-        let history = self.search_history(val);
-
-        // get element on lowest level
-        let first = &history[0];
-
-        // check if it is head node
-        if first.is_head {
-            return None;
-        }
-
-        // check if value in node equals searched value
-        if let Some(x) = &first.val {
-            if **x == *val {
-                return Some(Rc::clone(x));
-            }
-        }
-
-        None
+        node
     }
 
     // delete an element of SkipList and return it if exists
@@ -214,6 +248,19 @@ impl<T: Ord> SkipList<T> {
             return None;
         }
 
+        // remove node
+        self.remove(node);
+
+        // get value inside (should always go into if)
+        if let Some(x) = &node.val {
+            // return pointer to value inside
+            return Some(Rc::clone(x));
+        }
+        None
+    }
+
+    // remove a node from the SkipList
+    pub fn remove(&mut self, node: &Rc<Node<T>>) {
         // get predecessor and successor list as mutable
         let prev = node.prev.borrow_mut();
         let next = node.next.borrow_mut();
@@ -223,7 +270,6 @@ impl<T: Ord> SkipList<T> {
 
         // go through height reversed
         for i in (0..node_height).rev() {
-
             // check if predecessor is head and successor is tail
             if prev[i].is_head && next[i].is_tail {
                 // remove level and decrease height
@@ -236,12 +282,57 @@ impl<T: Ord> SkipList<T> {
                 next[i].prev.borrow_mut()[i] = Rc::clone(&prev[i]);
             }
         }
+    }
 
-        // get value inside (should always go into if)
-        if let Some(x) = &node.val {
-            // return pointer to value inside
-            return Some(Rc::clone(x));
+    // create an iterator to iterate through SkipList (lowest level)
+    pub fn iter(&self) -> NodeIterator<T> {
+        NodeIterator {
+            cur: Rc::clone(&self.head.next.borrow()[0]),
         }
+    }
+
+    // insert element or replace it if it exists already, if it replaces it, it is also returned
+    pub fn insert_or_replace(&mut self, val: T) -> Option<Rc<T>> {
+        // insert node
+        let node = self.insert_ret_node(val);
+
+        // get direct prev
+        let prev = Rc::clone(&node.prev.borrow()[0]);
+
+        // see if they have both the same value
+        if node.val == prev.val {
+            // remove prev
+            self.remove(&prev);
+
+            // should go into if
+            if let Some(x) = &prev.val {
+                return Some(Rc::clone(x));
+            }
+        }
+
+        None
+    }
+
+    // find node that matches value and return it if it exists
+    pub fn find_node(&self, val: &T) -> Option<Rc<Node<T>>> {
+        // get history to largest element <= val
+        let history = self.search_history(val);
+
+        // get element on lowest level
+        let first = &history[0];
+
+        // check if it is head node
+        if first.is_head {
+            return None;
+        }
+
+        // check if value in node equals searched value
+        if let Some(x) = &first.val {
+            if **x == *val {
+                return Some(Rc::clone(first));
+            }
+        }
+
         None
     }
 }
