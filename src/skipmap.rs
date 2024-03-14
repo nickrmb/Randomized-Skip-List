@@ -38,8 +38,13 @@ impl<K: Ord, V> SkipMap<K, V>
 where
     K: Copy,
 {
+    // creates a new (empty) SkipMap
+    pub fn new() -> SkipMap<K,V> {
+        SkipMap { skiplist: SkipList::new() }
+    }
+
     // put value associated to some key, returns previous value associated to key if exists
-    pub fn put<'a>(&mut self, key: &K, value: V) -> Option<Rc<V>> {
+    pub fn put(&mut self, key: &K, value: V) -> Option<Rc<V>> {
         // create new entry and insert it / replace it
         let r = self.skiplist.insert_or_replace(Entry {
             key: *key,

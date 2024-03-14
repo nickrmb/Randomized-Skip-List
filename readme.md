@@ -18,7 +18,7 @@ Randomized Skip List
 
 </div>
 
-A [**Randomized Skip List**](https://en.wikipedia.org/wiki/Skip_list) is a data structure that allows Finding / Insertion / Deletion in $\mathcal{O}(\log n)$ on average. Therefore, it is a good alternative to [AVL Trees](https://en.wikipedia.org/wiki/AVL_tree).
+A [**Randomized Skip List**](https://en.wikipedia.org/wiki/Skip_list) is a data structure that uses randomized procedures and allows Finding / Insertion / Deletion in $\mathcal{O}(\log n)$ on average. Therefore, it is a good alternative to [AVL Trees](https://en.wikipedia.org/wiki/AVL_tree).
 
 <p align="center" width="100%">
     <img src="misc/skiplist.png" width=90%><br>
@@ -27,7 +27,23 @@ A [**Randomized Skip List**](https://en.wikipedia.org/wiki/Skip_list) is a data 
 
 ---
 
-### SkipList
+## Features
+
+We have implemented two data structures:
+- SkipList: A general SkipList implementation using generics
+- SkipMap: A map-like data structure built on top of the SkipList implementation
+
+To verify a $\mathcal{O}(\log n)$ average runtime growth of main operations, a runtime plot can be seen in the following. The dotted points are measured samples and the line is the according regression line:
+
+| <p align="center" width="100%"> <img src="misc/list_performance.png" width=100%> </p> |
+--------------
+| <br><p align="center" width="100%"> <img src="misc/map_performance.png" width=100%></p> |
+
+Indeed a logarithmic runtime can be seen for insert and delete / put and del. Find / get are even faster and should also grow logarithmically, as insert and delete / put and del are built on top of them.
+
+## Documentation
+
+### Struct *SkipList&lt;T&gt;*
 
 The standart SkipList.
 
@@ -42,7 +58,7 @@ The standart SkipList.
 | fn remove(&mut self, node: &Rc<Node&lt;T&gt;>) | Removes a node from the SkipList, given Node must be part of the SkipList |
 | fn iter(&self) -> NodeIterator&lt;T&gt; | Creates an iterator that iterates over all elements in SkipList in sorted order |
 
-### Node
+### Struct *Node&lt;T&gt;*
 
 Internal representation of a value, including pointers to pre- / successors.
 
@@ -54,19 +70,20 @@ Internal representation of a value, including pointers to pre- / successors.
 
 ---
 
-### SkipMap
+### Struct *SkipMap<K,V>*
 
 A Map data structure based on a SkipList.
 
  Method        | Description   |
 |------------------------------|---------------|
+|  pub fn new() -> SkipMap<K,V> | Creates a new (empty) SkipMap |
 | fn put<'a>(&mut self, key: &K, value: V) -> Option<Rc&lt;V&gt;> | Puts a key with associated value into the SkipMap, returns old value if it exists |
 | fn get(&self, key: &K) -> Option<Rc&lt;V&gt;> | Returns value associated to key if it exists |
 | fn del(&mut self, key: &K) -> Option<Rc&lt;V&gt;> | Deletes value with associated key, returns deleted value if it exists |
 | pub fn find(&self, key: &K) -> Option<Rc<Node<Entry<K, V>>>> | Finds node that holds the entry. |
 | fn iter(&self) -> MapIterator<K, V> | Iterator over all entries, each given as an SEntry |
 
-### SEntry
+### Struct *SEntry<K,V>*
 
 Struct that holds a key with its associated value.
 
@@ -74,6 +91,6 @@ Accessible fields of SEntry<K,V>:
  - key: K
  - value: Rc&lt;V&gt;
 
-### Entry
+### Struct *Entry<K,V>*
 
 Internal struct used for mapping.
