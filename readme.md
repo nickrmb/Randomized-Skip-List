@@ -33,11 +33,11 @@ We have implemented two data structures:
 - SkipList: A general SkipList implementation using generics
 - SkipMap: A map-like data structure built on top of the SkipList implementation
 
-To verify a $\mathcal{O}(\log n)$ average runtime growth of main operations, a runtime plot can be seen in the following. The dotted points are measured samples and the line is the according regression line:
+To verify a $\mathcal{O}(\log n)$ average runtime growth of main operations, a runtime plot can be seen in the following. The dotted points are measured samples while the line illustrates the regression line:
 
-| <p align="center" width="100%"> <img src="misc/list_performance.png" width=100%> </p> |
---------------
-| <br><p align="center" width="100%"> <img src="misc/map_performance.png" width=100%></p> |
+<p align="center" width="100%"> <img src="misc/list_performance.png" width=100%> </p>
+
+<p align="center" width="100%"> <img src="misc/map_performance.png" width=100%></p>
 
 Indeed a logarithmic runtime can be seen for insert and delete / put and del. Find / get are even faster and should also grow logarithmically, as insert and delete / put and del are built on top of them.
 
